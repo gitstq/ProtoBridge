@@ -1,0 +1,67 @@
+# ProtoBridge - Lightweight Universal Protocol Adaptation & API Transformation Engine
+
+# Example: REST API Protocol Adapter
+# This config demonstrates how to proxy and transform API requests
+
+# Server settings
+server:
+  host: "127.0.0.1"
+  port: 8080
+
+# Middleware configuration
+middleware:
+  cors:
+    enabled: true
+    allowed_origins: ["*"]
+  rate_limit:
+    enabled: true
+    max_requests: 100
+    window_seconds: 60
+  logging:
+    enabled: true
+    log_body: false
+
+# Protocol adapters
+adapters:
+  jsonplaceholder:
+    source_protocol: "rest"
+    target_protocol: "rest"
+    target_base_url: "https://jsonplaceholder.typicode.com"
+    strip_prefix: "/api"
+    timeout: 30
+    forward_headers:
+      - "authorization"
+      - "content-type"
+    default_headers:
+      x-powered-by: "ProtoBridge/1.0"
+    request_transforms: []
+    response_transforms: []
+
+# Routes
+routes:
+  - method: "GET"
+    path: "/api/posts"
+    adapter: "jsonplaceholder"
+    description: "List all posts"
+
+  - method: "GET"
+    path: "/api/posts/{id}"
+    adapter: "jsonplaceholder"
+    description: "Get post by ID"
+
+  - method: "POST"
+    path: "/api/posts"
+    adapter: "jsonplaceholder"
+    description: "Create a post"
+
+  - method: "GET"
+    path: "/health"
+    description: "Health check"
+
+  - method: "GET"
+    path: "/stats"
+    description: "Server statistics"
+
+  - method: "GET"
+    path: "/adapters"
+    description: "List adapters"

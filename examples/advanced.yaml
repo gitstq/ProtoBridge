@@ -1,0 +1,119 @@
+# ProtoBridge - Advanced Configuration Example
+# Demonstrates request/response transformation, multiple adapters, and auth
+
+server:
+  host: "0.0.0.0"
+  port: 9090
+
+middleware:
+  cors:
+    enabled: true
+    allowed_origins: ["*"]
+    allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allowed_headers: ["Content-Type", "Authorization", "X-API-Key"]
+  rate_limit:
+    enabled: true
+    max_requests: 50
+    window_seconds: 60
+  logging:
+    enabled: true
+    log_body: true
+  cache:
+    enabled: true
+    max_size: 500
+    ttl: 120
+  auth:
+    enabled: false
+    api_keys: ["my-secret-key"]
+    bearer_tokens: ["my-bearer-token"]
+
+adapters:
+  # Adapter 1: API with request/response transformation
+  users_api:
+    source_protocol: "rest"
+    target_protocol: "rest"
+    target_base_url: "https://jsonplaceholder.typicode.com"
+    strip_prefix: "/v1/users"
+    timeout: 15
+    forward_headers:
+      - "authorization"
+    default_headers:
+      x-source: "ProtoBridge"
+    request_transforms:
+      - type: "rename"
+        source: "userName"
+        target: "name"
+      - type: "rename"
+        source: "userEmail"
+        target: "email"
+      - type: "copy"
+        source: "email"
+        target: "email_address"
+    response_transforms:
+      - type: "move"
+        source: "id"
+        target: "user_id"
+      - type: "remove"
+        source: "company.catchPhrase"
+
+  # Adapter 2: Posts API with caching-friendly routes
+  posts_api:
+    source_protocol: "rest"
+    target_protocol: "rest"
+    target_base_url: "https://jsonplaceholder.typicode.com"
+    strip_prefix: "/v1/posts"
+    add_prefix: "/posts"
+    timeout: 20
+    forward_headers:
+      - "authorization"
+    request_transforms: []
+    response_transforms:
+      - type: "copy"
+        source: "userId"
+        target: "author_id"
+
+routes:
+  # Users routes
+  - method: "GET"
+    path: "/v1/users"
+    adapter: "users_api"
+    description: "List all users (with transformation)"
+
+  - method: "GET"
+    path: "/v1/users/{id}"
+    adapter: "users_api"
+    description: "Get user by ID"
+
+  - method: "POST"
+    path: "/v1/users"
+    adapter: "users_api"
+    description: "Create user"
+
+  # Posts routes
+  - method: "GET"
+    path: "/v1/posts"
+    adapter: "posts_api"
+    description: "List all posts (cached)"
+
+  - method: "GET"
+    path: "/v1/posts/{id}"
+    adapter: "posts_api"
+    description: "Get post by ID"
+
+  - method: "POST"
+    path: "/v1/posts"
+    adapter: "posts_api"
+    description: "Create post"
+
+  # Built-in routes
+  - method: "GET"
+    path: "/health"
+    description: "Health check"
+
+  - method: "GET"
+    path: "/stats"
+    description: "Server statistics"
+
+  - method: "GET"
+    path: "/adapters"
+    description: "List adapters"
